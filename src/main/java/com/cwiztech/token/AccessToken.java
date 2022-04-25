@@ -12,10 +12,16 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.cwiztech.datalogs.model.APIRequestDataLog;
+import com.cwiztech.datalogs.model.DatabaseTables;
+import com.cwiztech.datalogs.model.tableDataLogs;
+import com.cwiztech.datalogs.repository.apiRequestDataLogRepository;
+import com.cwiztech.sales.model.OrderDetail;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Component
@@ -24,6 +30,9 @@ public class AccessToken {
 	private static String apigateway;
 	private static String applicationPathUM;
 
+	@Autowired
+	private static apiRequestDataLogRepository apirequestdatalogRepository;
+	
 	@Autowired
 	public AccessToken(Environment env) {
 		log.info("Trying to get Application Path..........");
@@ -134,32 +143,37 @@ public class AccessToken {
 		return myobj;
 	}
 
-	public static String getTokenDetail(String accessToken) {
+	public static JSONObject checkToken(String requestType, String requestURI, String requestBody, DatabaseTables databaseTableID, String workstation, String accessToken) throws JsonProcessingException {
 		log.info("----------------------------------------------------------------------------------");
-		log.info("Get Toeken Detail By Token Service");
-		log.info("Application Path: " + applicationPathUM);
+		log.info("Check Toeken Detail By Token Service");
+		log.info("Application Path: " + apigateway);
 		log.info("accessToken: " + accessToken);
 		log.info("----------------------------------------------------------------------------------");
 		RestTemplate restTemplate = new RestTemplate();
-		String UserDetail;
+		JSONObject myobj = new JSONObject();
 		
 		String token = accessToken;
 		String[] parts = token.split(" ");
 		String OauthToken = parts[1];
 		log.info(OauthToken);
-
-		ResponseEntity<String> getToken = restTemplate.exchange(applicationPathUM + "oauth/check_token?token=" + OauthToken, HttpMethod.GET, null, String.class);
-		JSONObject myobj = new JSONObject(getToken.getBody().toString());
-		UserDetail = myobj.getString("user_name");
+		
+		try {
+			ResponseEntity<String> getToken = restTemplate.exchange(applicationPathUM + "oauth/check_token?token=" + OauthToken, HttpMethod.GET, null, String.class);
+			myobj = new JSONObject(getToken.getBody().toString());
+		} catch (Exception e) {
+			 APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("PUT", databaseTableID, (long) 0, "/salesorderdetail", requestBody, workstation);
+			apiRequest = tableDataLogs.errorDataLog(apiRequest, "invalid_token", "Token was not recognised");
+			apirequestdatalogRepository.saveAndFlush(apiRequest);
+			
+			myobj.put("error", "invalid_token");
+			myobj.put("error_description", "Token was not recognised");
+		}
 		log.info("----------------------------------------------------------------------------------");
 		
-		return UserDetail;
+		return myobj;
 	}
 
 	public static HttpHeaders getHttpHeader(String accessToken) throws JsonProcessingException, JSONException, ParseException {
-		log.info("----------------------------------------------------------------------------------");
-		log.info("PRODUCT Service");
-		log.info("----------------------------------------------------------------------------------");
 		JSONObject jsonObjtoken = null;
 		try {
 			jsonObjtoken = new JSONObject(findTokenAPIGateway());
@@ -168,6 +182,7 @@ public class AccessToken {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("Content-type", "application/json");
 		headers.add("Authorization", "bearer " + jsonObjtoken.getString("access_token"));
+//		headers.add("Authorization", accessToken);
 		headers.add("Grant_Type", "password");
 		return headers;
 	}
@@ -183,7 +198,7 @@ public class AccessToken {
 		HttpEntity<String> entity = new HttpEntity<String>(headers);
 		log.info("Application Path: "+apigateway);
 		String rtnToken = restTemplate.postForObject(
-				apigateway + "oauth/token?grant_type=password&username=nouser&password=", entity,
+				apigateway + "oauth/token?grant_type=password&username=nouser&password=123Magna$%^", entity,
 				String.class);
 		log.info("Output: " + rtnToken);
 		log.info("--------------------------------------------------------");
