@@ -124,7 +124,7 @@ public class Lookup {
 	}
 
 	public static long getDatabaseTableID() {
-		return (long) 12;
+		return (long) 1;
 	}
 
 }
