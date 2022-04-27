@@ -21,7 +21,6 @@ import com.cwiztech.datalogs.model.APIRequestDataLog;
 import com.cwiztech.datalogs.model.DatabaseTables;
 import com.cwiztech.datalogs.model.tableDataLogs;
 import com.cwiztech.datalogs.repository.apiRequestDataLogRepository;
-import com.cwiztech.sales.model.OrderDetail;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Component

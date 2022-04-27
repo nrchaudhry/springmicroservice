@@ -2,10 +2,13 @@ package com.cwiztech.systemsetting.controller;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +28,7 @@ import com.cwiztech.datalogs.repository.databaseTablesRepository;
 import com.cwiztech.datalogs.repository.tableDataLogRepository;
 import com.cwiztech.systemsetting.model.Lookup;
 import com.cwiztech.systemsetting.repository.lookupRepository;
+import com.cwiztech.token.AccessToken;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -74,31 +78,17 @@ public class lookupController{
 		return rtn;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
-	public String getOne(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		log.info("GET: /lookup/" + id);
+	public ResponseEntity getOne(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("GET", "/lookup/"+id, null, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
 		Lookup lookup = lookuprepository.findOne(id);
-		String rtn, workstation = null;
-
-		Long requestUser;
-		requestUser = (long) 0;
+		List<Lookup> lookups = new ArrayList<Lookup>();
+		lookups.add(lookup);
 		
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("GET", databaseTableID, requestUser, "/lookup/" + id,
-				null, workstation);
-
-		rtn = mapper.writeValueAsString(lookup);
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
+		return new ResponseEntity(getAPIResponse(lookups, apiRequest).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/all", method = RequestMethod.GET)
@@ -499,4 +489,42 @@ public class lookupController{
 		
 		return rtn;
 	}
-};
+
+	public APIRequestDataLog checkToken(String requestType, String requestURI, String requestBody, String workstation, String accessToken) throws JsonProcessingException {
+		JSONObject checkTokenResponse = AccessToken.checkToken(accessToken);
+		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
+		APIRequestDataLog apiRequest;
+		
+		log.info(requestType + ": " + requestURI);
+		if (requestBody != null)
+			log.info("Input: " + requestBody);
+
+		if (checkTokenResponse.has("error")) {
+			apiRequest = tableDataLogs.apiRequestDataLog(requestType, databaseTableID, (long) 0, requestURI, requestBody, workstation);
+			apiRequest = tableDataLogs.errorDataLog(apiRequest, "invalid_token", "Token was not recognised");
+			apirequestdatalogRepository.saveAndFlush(apiRequest);
+			return apiRequest;
+		}
+		
+		Long requestUser = checkTokenResponse.getLong("user_ID");
+		apiRequest = tableDataLogs.apiRequestDataLog(requestType, databaseTableID, requestUser, requestURI, requestBody, workstation);
+
+		return apiRequest;
+	}
+	
+	APIRequestDataLog getAPIResponse(List<Lookup> lookups, APIRequestDataLog apiRequest) throws JSONException, JsonProcessingException, ParseException {
+		ObjectMapper mapper = new ObjectMapper();
+
+		if (lookups.size() == 1)
+			apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookups.get(0)));
+		else
+			apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookups));
+		apiRequest.setREQUEST_STATUS("Success");
+		apirequestdatalogRepository.saveAndFlush(apiRequest);
+
+		log.info("Output: " + apiRequest.getREQUEST_OUTPUT());
+		log.info("--------------------------------------------------------");
+
+		return apiRequest;
+	}
+}
