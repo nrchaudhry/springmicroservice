@@ -157,7 +157,6 @@ public class lookupController{
 	public ResponseEntity insertupdateAll(JSONArray jsonLookups, JSONObject jsonLookup, APIRequestDataLog apiRequest) throws JsonProcessingException, JSONException, ParseException {
 	    SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date date = new Date();
-		long id = 0;
 
 		List<Lookup> lookups = new ArrayList<Lookup>();
 		if (jsonLookup != null) {
@@ -169,6 +168,7 @@ public class lookupController{
 		for (int a=0; a<jsonLookups.length(); a++) {
 			JSONObject jsonObj = jsonLookups.getJSONObject(a);
 			Lookup lookup = new Lookup();
+			long id = 0;
 
 			if (jsonObj.has("id")) {
 				id = jsonObj.getLong("id");
