@@ -1,6 +1,5 @@
 package com.cwiztech.token;
 
-import java.io.IOException;
 import java.text.ParseException;
 
 import org.json.JSONException;
@@ -12,15 +11,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import com.cwiztech.datalogs.model.APIRequestDataLog;
-import com.cwiztech.datalogs.model.DatabaseTables;
-import com.cwiztech.datalogs.model.tableDataLogs;
-import com.cwiztech.datalogs.repository.apiRequestDataLogRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Component
@@ -29,9 +23,6 @@ public class AccessToken {
 	private static String apigateway;
 	private static String applicationPathUM;
 
-	@Autowired
-	private static apiRequestDataLogRepository apirequestdatalogRepository;
-	
 	@Autowired
 	public AccessToken(Environment env) {
 		log.info("Trying to get Application Path..........");
@@ -134,36 +125,6 @@ public class AccessToken {
 			ResponseEntity<String> getToken = restTemplate.exchange(applicationPathUM + "oauth/check_token?token=" + OauthToken, HttpMethod.GET, null, String.class);
 			myobj = new JSONObject(getToken.getBody().toString());
 		} catch (Exception e) {
-			myobj.put("error", "invalid_token");
-			myobj.put("error_description", "Token was not recognised");
-		}
-		log.info("----------------------------------------------------------------------------------");
-		
-		return myobj;
-	}
-
-	public static JSONObject checkToken(String requestType, String requestURI, String requestBody, DatabaseTables databaseTableID, String workstation, String accessToken) throws JsonProcessingException {
-		log.info("----------------------------------------------------------------------------------");
-		log.info("Check Toeken Detail By Token Service");
-		log.info("Application Path: " + apigateway);
-		log.info("accessToken: " + accessToken);
-		log.info("----------------------------------------------------------------------------------");
-		RestTemplate restTemplate = new RestTemplate();
-		JSONObject myobj = new JSONObject();
-		
-		String token = accessToken;
-		String[] parts = token.split(" ");
-		String OauthToken = parts[1];
-		log.info(OauthToken);
-		
-		try {
-			ResponseEntity<String> getToken = restTemplate.exchange(applicationPathUM + "oauth/check_token?token=" + OauthToken, HttpMethod.GET, null, String.class);
-			myobj = new JSONObject(getToken.getBody().toString());
-		} catch (Exception e) {
-			 APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("PUT", databaseTableID, (long) 0, "/salesorderdetail", requestBody, workstation);
-			apiRequest = tableDataLogs.errorDataLog(apiRequest, "invalid_token", "Token was not recognised");
-			apirequestdatalogRepository.saveAndFlush(apiRequest);
-			
 			myobj.put("error", "invalid_token");
 			myobj.put("error_description", "Token was not recognised");
 		}
