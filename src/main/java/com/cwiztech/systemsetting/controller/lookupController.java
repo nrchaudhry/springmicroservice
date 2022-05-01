@@ -79,296 +79,217 @@ public class lookupController{
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping(value = "/all", method = RequestMethod.GET)
+	public ResponseEntity getAll(@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("GET", "/lookup/all", null, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+
+		List<Lookup> lookups = lookuprepository.findAll();
+		
+		return new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
 	public ResponseEntity getOne(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		APIRequestDataLog apiRequest = checkToken("GET", "/lookup/"+id, null, null, headToken);
 		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
 		Lookup lookup = lookuprepository.findOne(id);
+		
+		return new ResponseEntity(getAPIResponse(null, lookup, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping(value = "/ids", method = RequestMethod.POST)
+	public ResponseEntity getByIDs(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken)
+			throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("POST", "/lookup/ids", data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+
+		List<Integer> ids = new ArrayList<Integer>(); 
+		JSONObject jsonObj = new JSONObject(data);
+		JSONArray jsonlookups = jsonObj.getJSONArray("lookups");
+		for (int i=0; i<jsonlookups.length(); i++) {
+			ids.add((Integer) jsonlookups.get(i));
+		}
 		List<Lookup> lookups = new ArrayList<Lookup>();
-		lookups.add(lookup);
+		if (jsonlookups.length()>0)
+			lookups = lookuprepository.findByIDs(ids);
 		
-		return new ResponseEntity(getAPIResponse(lookups, apiRequest).getREQUEST_OUTPUT(), HttpStatus.OK);
+		return new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 
-	@RequestMapping(value = "/all", method = RequestMethod.GET)
-	public String getAll(@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		log.info("GET: /lookup/all");
-
-		List<Lookup> lookup = lookuprepository.findAll();
-		String rtn, workstation = null;
-		
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("GET", databaseTableID, requestUser,
-				"/lookup/all", null, workstation);
-
-		rtn = mapper.writeValueAsString(lookup);
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
-	}
-
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(method = RequestMethod.POST)
-	public String insert(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
+	public ResponseEntity insert(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
 			throws JsonProcessingException, JSONException, ParseException {
-		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		Date date = new Date();
-		ObjectMapper mapper = new ObjectMapper();
+		APIRequestDataLog apiRequest = checkToken("POST", "/lookup", data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 		
-
-		log.info("POST: /lookup");
-		log.info("Input: " + data);
-
-		JSONObject jsonObj = new JSONObject(data);
-		Lookup lookup = new Lookup();
-		String rtn, workstation = null;
-		
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		
-		if (jsonObj.has("workstation"))
-			workstation = jsonObj.getString("workstation");
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("POST", databaseTableID, requestUser, "/lookup", data,
-				workstation);
-
-		if (!jsonObj.has("entityname")) {
-			apiRequest = tableDataLogs.errorDataLog(apiRequest, "Lookup", "Entityname  is missing");
-			apirequestdatalogRepository.saveAndFlush(apiRequest);
-			return apiRequest.getREQUEST_OUTPUT();
-		}
-		lookup.setENTITYNAME(jsonObj.getString("entityname"));
-		
-		if (!jsonObj.has("code")) {
-			apiRequest = tableDataLogs.errorDataLog(apiRequest, "Lookup", "Code  is missing");
-			apirequestdatalogRepository.saveAndFlush(apiRequest);
-			return apiRequest.getREQUEST_OUTPUT();
-		}
-		lookup.setCODE(jsonObj.getString("code"));
-		
-		if (!jsonObj.has("description")) {
-			apiRequest = tableDataLogs.errorDataLog(apiRequest, "Lookup", "Description  is missing");
-			apirequestdatalogRepository.saveAndFlush(apiRequest);
-			return apiRequest.getREQUEST_OUTPUT();
-		}
-		lookup.setDESCRIPTION(jsonObj.getString("description"));
-		
-		if (jsonObj.has("entity_STATUS") && !jsonObj.isNull("entity_STATUS")) 
-		lookup.setENTITY_STATUS(jsonObj.getString("entity_STATUS").toUpperCase());
-		
-		lookup.setISACTIVE("Y");
-		lookup.setMODIFIED_BY(requestUser);
-		lookup.setMODIFIED_WORKSTATION(workstation);
-		lookup.setMODIFIED_WHEN(dateFormat1.format(date));
-		lookup = lookuprepository.saveAndFlush(lookup);
-		rtn = mapper.writeValueAsString(lookup);
-
-		tbldatalogrepository
-				.saveAndFlush(tableDataLogs.TableSaveDataLog(lookup.getID(), databaseTableID, requestUser, rtn));
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
-
+		return insertupdateAll(null, new JSONObject(data), apiRequest);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-	public String update(@PathVariable Long id, @RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
+	public ResponseEntity update(@PathVariable Long id, @RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
 			throws JsonProcessingException, JSONException, ParseException {
-		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		Date date = new Date();
-		ObjectMapper mapper = new ObjectMapper();
+		APIRequestDataLog apiRequest = checkToken("PUT", "/lookup/"+id, data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 		
-		log.info("PUT: /lookup/" + id);
-		log.info("Input: " + data);
-
-		JSONObject jsonObj = new JSONObject(data);
-		Lookup lookup = lookuprepository.findOne(id);
-		String rtn, workstation = null;
-		
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		if (jsonObj.has("workstation"))
-			workstation = jsonObj.getString("workstation");
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("PUT", databaseTableID, requestUser, "/lookup", data,
-				workstation);
-
-		if (jsonObj.has("entityname") && !jsonObj.isNull("entityname"))
-			lookup.setENTITYNAME(jsonObj.getString("entityname"));
-		if (jsonObj.has("code") && !jsonObj.isNull("code"))
-			lookup.setCODE(jsonObj.getString("code"));
-		if (jsonObj.has("description") && !jsonObj.isNull("description")) 
-			lookup.setDESCRIPTION(jsonObj.getString("description"));
-		if (jsonObj.has("entity_STATUS")) 
-			lookup.setENTITY_STATUS(jsonObj.getString("entity_STATUS"));
-	
-		if (jsonObj.has("isactive"))
-			lookup.setISACTIVE(jsonObj.getString("isactive"));
-		lookup.setMODIFIED_BY(requestUser);
-		lookup.setMODIFIED_WORKSTATION(workstation);
-		lookup.setMODIFIED_WHEN(dateFormat1.format(date));
-		lookup = lookuprepository.saveAndFlush(lookup);
-		rtn = mapper.writeValueAsString(lookup);
-
-		tbldatalogrepository.saveAndFlush(
-				tableDataLogs.TableSaveDataLog(lookup.getID(), databaseTableID, requestUser, rtn));
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
+		return insertupdateAll(null, new JSONObject(data), apiRequest);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping(method = RequestMethod.PUT)
+	public ResponseEntity insertupdate(@PathVariable Long id, @RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
+			throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("PUT", "/lookup", data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+		
+		return insertupdateAll(new JSONArray(data), null, apiRequest);
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public ResponseEntity insertupdateAll(JSONArray jsonLookups, JSONObject jsonLookup, APIRequestDataLog apiRequest) throws JsonProcessingException, JSONException, ParseException {
+	    SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date = new Date();
+		long id = 0;
+
+		List<Lookup> lookups = new ArrayList<Lookup>();
+
+		if (jsonLookup != null)
+			jsonLookups.put(jsonLookup);
+		
+		for (int a=0; a<jsonLookups.length(); a++) {
+			JSONObject jsonObj = jsonLookups.getJSONObject(a);
+			Lookup lookup = new Lookup();
+
+			if (jsonObj.has("id")) {
+				id = jsonObj.getLong("id");
+				if (id != 0) {
+					lookup = lookuprepository.findOne(id);
+					
+					if (lookup == null)
+						return new ResponseEntity(getAPIResponse(null, null, "Invalid Lookup Data!", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+				}
+			}
+
+			if (id == 0) {
+				if (!jsonObj.has("entityname") && !jsonObj.isNull("entityname"))
+					return new ResponseEntity(getAPIResponse(null, null, "Entityname is missing", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+				
+				if (!jsonObj.has("code") && !jsonObj.isNull("code"))
+					return new ResponseEntity(getAPIResponse(null, null, "Code is missing", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+				
+				if (!jsonObj.has("description") && !jsonObj.isNull("description"))
+					return new ResponseEntity(getAPIResponse(null, null, "Description is missing", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
+			}
+			
+			if (!jsonObj.has("entityname") && !jsonObj.isNull("entityname"))
+				lookup.setENTITYNAME(jsonObj.getString("entityname"));
+			
+			if (!jsonObj.has("code") && !jsonObj.isNull("code"))
+				lookup.setCODE(jsonObj.getString("code"));
+			
+			if (!jsonObj.has("description") && !jsonObj.isNull("description"))
+				lookup.setDESCRIPTION(jsonObj.getString("description"));
+
+			if (jsonObj.has("entity_STATUS") && !jsonObj.isNull("entity_STATUS")) 
+				lookup.setENTITY_STATUS(jsonObj.getString("entity_STATUS").toUpperCase());
+			
+			if (jsonObj.has("isactive"))
+				lookup.setISACTIVE(jsonObj.getString("isactive"));
+			else if (id == 0)
+				lookup.setISACTIVE("Y");
+
+			lookup.setMODIFIED_BY(apiRequest.getREQUEST_ID());
+			lookup.setMODIFIED_WORKSTATION(apiRequest.getLOG_WORKSTATION());
+			lookup.setMODIFIED_WHEN(dateFormat1.format(date));
+			lookups.add(lookup);
+		}
+		
+		for (int a=0; a<lookups.size(); a++) {
+			Lookup lookup = lookups.get(a);
+			lookup = lookuprepository.saveAndFlush(lookup);
+			lookups.get(a).setID(lookup.getID());
+		}
+		
+		ResponseEntity responseentity;
+		if (jsonLookup != null)
+			responseentity = new ResponseEntity(getAPIResponse(null, lookups.get(0), null, apiRequest, true).getREQUEST_OUTPUT(), HttpStatus.OK);
+		else
+			responseentity = new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, true).getREQUEST_OUTPUT(), HttpStatus.OK);
+		return responseentity;
+	}
+							
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-	public String delete(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
-		ObjectMapper mapper = new ObjectMapper();
-		log.info("DELETE: /lookup/" + id);
+	public ResponseEntity delete(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("GET", "/lookup/"+id, null, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
 		Lookup lookup = lookuprepository.findOne(id);
-		String rtn, workstation = null;
-
-		Long requestUser;
-		requestUser = (long) 0;
-		
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("DELETE", databaseTableID, requestUser, "/lookup", null,
-				workstation);
-
 		lookuprepository.delete(lookup);
-		rtn = mapper.writeValueAsString(lookup);
-
-		tbldatalogrepository.saveAndFlush(
-				tableDataLogs.TableSaveDataLog(lookup.getID(), databaseTableID, requestUser, rtn));
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
+		
+		return new ResponseEntity(getAPIResponse(null, lookup, null, apiRequest, true).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/remove/{id}", method = RequestMethod.GET)
-	public String remove(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
-		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		Date date = new Date();
-
-		ObjectMapper mapper = new ObjectMapper();
+	public ResponseEntity remove(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("GET", "/lookup/"+id, null, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 		
-		log.info("GET: /lookup/" + id + "/remove");
-
-		Lookup lookup = lookuprepository.findOne(id);
-		String rtn, workstation = null;
-
-		Long requestUser;
-		requestUser = (long) 0;
+		JSONObject lookup = new JSONObject();
+		lookup.put("id", id);
+		lookup.put("isactive", "N");
 		
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("GET", databaseTableID, requestUser,
-				"/lookup" + id + "/remove", "", workstation);
-		lookup.setISACTIVE("N");
-		lookup.setMODIFIED_BY(requestUser);
-		lookup.setMODIFIED_WORKSTATION(workstation);
-		lookup.setMODIFIED_WHEN(dateFormat1.format(date));
-		lookup = lookuprepository.saveAndFlush(lookup);
-		rtn = mapper.writeValueAsString(lookup);
-		tbldatalogrepository
-				.saveAndFlush(tableDataLogs.TableSaveDataLog(lookup.getID(), databaseTableID, requestUser, rtn));
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
+		return insertupdateAll(null, lookup, apiRequest);
 	}
 
+	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/search", method = RequestMethod.POST)
-	public String getBySearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
+	public ResponseEntity getBySearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return BySearch(data, true, headToken);
-
 	}
 
+	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/search/all", method = RequestMethod.POST)
-	public String getAllBySearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
+	public ResponseEntity getAllBySearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return BySearch(data, false, headToken);
-
 	}
 
-	public String BySearch(String data, boolean active, String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		
-		log.info("POST: lookup/search" + ((active == true) ? "" : "/all"));
-		log.info("Input: " + data);
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public ResponseEntity BySearch(String data, boolean active, String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("POST", "/lookup/search" + ((active == true) ? "" : "/all"), data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
 		JSONObject jsonObj = new JSONObject(data);
-		String rtn = null, workstation = null;
 
-		List<Lookup> lookup = ((active == true)
+		List<Lookup> lookups = ((active == true)
 				? lookuprepository.findBySearch("%" + jsonObj.getString("search") + "%")
 				: lookuprepository.findAllBySearch("%" + jsonObj.getString("search") + "%"));
 		
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("POST", databaseTableID, requestUser,
-				"/lookup/search" + ((active == true) ? "" : "/all"), null, workstation);
-
-		rtn = mapper.writeValueAsString(lookup);
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
-
+		return new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 
+	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/advancedsearch", method = RequestMethod.POST)
-	public String getByAdvancedSearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
+	public ResponseEntity getByAdvancedSearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return ByAdvancedSearch(data, true, headToken);
 	}
 
+	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/advancedsearch/all", method = RequestMethod.POST)
-	public String getAllByAdvancedSearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
+	public ResponseEntity getAllByAdvancedSearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return ByAdvancedSearch(data, false, headToken);
 	}
 
-	public String ByAdvancedSearch(String data, boolean active, String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		
-		log.info("POST: lookup/advancedsearch" + ((active == true) ? "" : "/all"));
-		log.info("Input: " + data);
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public ResponseEntity ByAdvancedSearch(String data, boolean active, String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("POST", "/lookup/advancedsearch" + ((active == true) ? "" : "/all"), data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
 		JSONObject jsonObj = new JSONObject(data);
 		long lookup_ID = 0;
@@ -376,118 +297,44 @@ public class lookupController{
 		if (jsonObj.has("lookup_ID"))
 			lookup_ID = jsonObj.getLong("lookup_ID");
 
-		List<Lookup> lookup = ((active == true)
+		List<Lookup> lookups = ((active == true)
 				? lookuprepository.findByAdvancedSearch(lookup_ID)
 				: lookuprepository.findAllByAdvancedSearch(lookup_ID));
-		String rtn, workstation = null;
 
-		Long requestUser;
-		requestUser = (long) 0;
-		
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("POST", databaseTableID, requestUser,
-				"/lookup/advancedsearch" + ((active == true) ? "" : "/all"), data, workstation);
-
-		rtn = mapper.writeValueAsString(lookup);
-
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
-		log.info("Output: " + rtn);
-		log.info("--------------------------------------------------------");
-
-		return rtn;
+		return new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value="/entitylist",method=RequestMethod.GET)
-	public String findEntityList(@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		
-		log.info("GET: /lookup/entitylist");
-		
-		List<Object> lookup =  lookuprepository.findEntityList();
-		String rtn, workstation=null;
-		
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("GET", databaseTableID, requestUser,
-				"/lookup/entitylist", null, workstation);
-		
-		rtn = mapper.writeValueAsString(lookup);
-		
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-		
-		log.info("Output: "+rtn);
-		log.info("--------------------------------------------------------");
-		
-		return rtn;
+	public ResponseEntity findEntityList(@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		List<Object> lookups =  lookuprepository.findEntityList();
+		return new ResponseEntity(lookups.toString(), HttpStatus.OK);
 	}
 	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value="/entity",method=RequestMethod.POST)
-	public String findActiveByEntityName(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
+	public ResponseEntity findActiveByEntityName(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("POST", "/lookup/entity", data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
-		log.info("POST: lookup/entity");
-		log.info("Input: " + data);
-		
 		JSONObject jsonObj = new JSONObject(data);
 		String entity=(String) jsonObj.get("entityname");
-		List<Lookup> lookup =  lookuprepository.findActiveByEntityName(entity);
-
-		String rtn, workstation = null;
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("GET", databaseTableID, requestUser,
-				"/lookup/entity", data, workstation);
+		List<Lookup> lookups =  lookuprepository.findActiveByEntityName(entity);
 		
-		rtn = mapper.writeValueAsString(lookup);
-		
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-		
-		log.info("Output: "+rtn);
-		log.info("--------------------------------------------------------");
-		
-		return rtn;
+		return new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value="/entity/all",method=RequestMethod.POST)
-	public String findAllByEntityName(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
+	public ResponseEntity findAllByEntityName(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+		APIRequestDataLog apiRequest = checkToken("POST", "/lookup/entity/all", data, null, headToken);
+		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
-		log.info("POST: lookup/entity/all");
-		log.info("Input: " + data);
-		
 		JSONObject jsonObj = new JSONObject(data);
 		String entity=(String) jsonObj.get("entityname");
-
-		String rtn, workstation = null;
-		Long requestUser;
-		requestUser = (long) 0;
-
-		DatabaseTables databaseTableID = databasetablesrepository.findOne(Lookup.getDatabaseTableID());
-		APIRequestDataLog apiRequest = tableDataLogs.apiRequestDataLog("GET", databaseTableID, requestUser,
-				"/lookup/entity/all", data, workstation);
+		List<Lookup> lookups =  lookuprepository.findAllByEntityName(entity);
 		
-		List<Lookup> lookup =  lookuprepository.findAllByEntityName(entity);
-		rtn = mapper.writeValueAsString(lookup);
-		
-		apiRequest.setREQUEST_OUTPUT(rtn);
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-		
-		log.info("Output: "+rtn);
-		log.info("--------------------------------------------------------");
-		
-		return rtn;
+		return new ResponseEntity(getAPIResponse(lookups, null, null, apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.OK);
 	}
 
 	public APIRequestDataLog checkToken(String requestType, String requestURI, String requestBody, String workstation, String accessToken) throws JsonProcessingException {
@@ -512,16 +359,24 @@ public class lookupController{
 		return apiRequest;
 	}
 	
-	APIRequestDataLog getAPIResponse(List<Lookup> lookups, APIRequestDataLog apiRequest) throws JSONException, JsonProcessingException, ParseException {
+	APIRequestDataLog getAPIResponse(List<Lookup> lookups, Lookup lookup, String message, APIRequestDataLog apiRequest, boolean isTableLog) throws JSONException, JsonProcessingException, ParseException {
 		ObjectMapper mapper = new ObjectMapper();
 
-		if (lookups.size() == 1)
-			apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookups.get(0)));
-		else
-			apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookups));
-		apiRequest.setREQUEST_STATUS("Success");
-		apirequestdatalogRepository.saveAndFlush(apiRequest);
-
+		if (lookups == null && lookup == null) {
+			apiRequest = tableDataLogs.errorDataLog(apiRequest, "Lookup", message);
+			apirequestdatalogRepository.saveAndFlush(apiRequest);
+		} else {
+			if (lookup != null)
+				apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookup));
+			else
+				apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookups));
+			apiRequest.setREQUEST_STATUS("Success");
+			apirequestdatalogRepository.saveAndFlush(apiRequest);
+		}
+		
+		if (isTableLog)
+			tbldatalogrepository.saveAndFlush(tableDataLogs.TableSaveDataLog(lookup.getID(), apiRequest.getDATABASETABLE_ID(), apiRequest.getREQUEST_ID(), apiRequest.getREQUEST_OUTPUT()));
+		
 		log.info("Output: " + apiRequest.getREQUEST_OUTPUT());
 		log.info("--------------------------------------------------------");
 
