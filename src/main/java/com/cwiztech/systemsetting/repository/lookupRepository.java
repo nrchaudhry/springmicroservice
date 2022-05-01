@@ -19,11 +19,11 @@ public interface lookupRepository extends JpaRepository<Lookup, Long> {
 	public List<Lookup> findByIDs(@Param("ids") List<Integer> ids);
 
 	@Query(value = "select * from TBLSYSTEMSETTINGLOOKUP "
-			+ "where CODE like ?1 or DESCRIPTION like ?1 and ENTITY_STATUS like ?1 and ISACTIVE='Y'", nativeQuery = true)
+			+ "where (CODE like ?1 or DESCRIPTION like ?1 or ENTITY_STATUS like ?1) and ISACTIVE='Y'", nativeQuery = true)
 	public List<Lookup> findBySearch(String search);
 
 	@Query(value = "select * from TBLSYSTEMSETTINGLOOKUP "
-			+ "where CODE like ?1 or DESCRIPTION like ?1 and ENTITY_STATUS like ?1 ", nativeQuery = true)
+			+ "where CODE like ?1 or DESCRIPTION like ?1 or ENTITY_STATUS like ?1 ", nativeQuery = true)
 	public List<Lookup> findAllBySearch(String search);
 
 	@Query(value = "select * from TBLSYSTEMSETTINGLOOKUP " 

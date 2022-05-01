@@ -91,7 +91,7 @@ public class lookupController{
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
-	public ResponseEntity getOne(@PathVariable Long id,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+	public ResponseEntity getOne(@PathVariable Long id, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		APIRequestDataLog apiRequest = checkToken("GET", "/lookup/"+id, null, null, headToken);
 		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 
@@ -132,17 +132,20 @@ public class lookupController{
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(value = "/{id}", method = RequestMethod.PUT)
-	public ResponseEntity update(@PathVariable Long id, @RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
+	public ResponseEntity update(@PathVariable Long id, @RequestBody String data, @RequestHeader(value = "Authorization") String headToken)
 			throws JsonProcessingException, JSONException, ParseException {
 		APIRequestDataLog apiRequest = checkToken("PUT", "/lookup/"+id, data, null, headToken);
 		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 		
-		return insertupdateAll(null, new JSONObject(data), apiRequest);
+		JSONObject jsonObj = new JSONObject(data);
+		jsonObj.put("id", id);
+		
+		return insertupdateAll(null, jsonObj, apiRequest);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@RequestMapping(method = RequestMethod.PUT)
-	public ResponseEntity insertupdate(@PathVariable Long id, @RequestBody String data,@RequestHeader(value = "Authorization") String headToken)
+	public ResponseEntity insertupdate(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken)
 			throws JsonProcessingException, JSONException, ParseException {
 		APIRequestDataLog apiRequest = checkToken("PUT", "/lookup", data, null, headToken);
 		if (apiRequest.getREQUEST_STATUS() != null) return new ResponseEntity(apiRequest.getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
@@ -157,9 +160,11 @@ public class lookupController{
 		long id = 0;
 
 		List<Lookup> lookups = new ArrayList<Lookup>();
-
-		if (jsonLookup != null)
+		if (jsonLookup != null) {
+			jsonLookups = new JSONArray();
 			jsonLookups.put(jsonLookup);
+		}
+		log.info(jsonLookups.toString());
 		
 		for (int a=0; a<jsonLookups.length(); a++) {
 			JSONObject jsonObj = jsonLookups.getJSONObject(a);
@@ -176,23 +181,23 @@ public class lookupController{
 			}
 
 			if (id == 0) {
-				if (!jsonObj.has("entityname") && !jsonObj.isNull("entityname"))
+				if (!jsonObj.has("entityname") || jsonObj.isNull("entityname"))
 					return new ResponseEntity(getAPIResponse(null, null, "Entityname is missing", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 				
-				if (!jsonObj.has("code") && !jsonObj.isNull("code"))
+				if (!jsonObj.has("code") || jsonObj.isNull("code"))
 					return new ResponseEntity(getAPIResponse(null, null, "Code is missing", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 				
-				if (!jsonObj.has("description") && !jsonObj.isNull("description"))
+				if (!jsonObj.has("description") || jsonObj.isNull("description"))
 					return new ResponseEntity(getAPIResponse(null, null, "Description is missing", apiRequest, false).getREQUEST_OUTPUT(), HttpStatus.BAD_REQUEST);
 			}
 			
-			if (!jsonObj.has("entityname") && !jsonObj.isNull("entityname"))
+			if (jsonObj.has("entityname") && !jsonObj.isNull("entityname"))
 				lookup.setENTITYNAME(jsonObj.getString("entityname"));
 			
-			if (!jsonObj.has("code") && !jsonObj.isNull("code"))
+			if (jsonObj.has("code") && !jsonObj.isNull("code"))
 				lookup.setCODE(jsonObj.getString("code"));
 			
-			if (!jsonObj.has("description") && !jsonObj.isNull("description"))
+			if (jsonObj.has("description") && !jsonObj.isNull("description"))
 				lookup.setDESCRIPTION(jsonObj.getString("description"));
 
 			if (jsonObj.has("entity_STATUS") && !jsonObj.isNull("entity_STATUS")) 
@@ -250,13 +255,13 @@ public class lookupController{
 
 	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/search", method = RequestMethod.POST)
-	public ResponseEntity getBySearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+	public ResponseEntity getBySearch(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return BySearch(data, true, headToken);
 	}
 
 	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/search/all", method = RequestMethod.POST)
-	public ResponseEntity getAllBySearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+	public ResponseEntity getAllBySearch(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return BySearch(data, false, headToken);
 	}
 
@@ -276,13 +281,13 @@ public class lookupController{
 
 	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/advancedsearch", method = RequestMethod.POST)
-	public ResponseEntity getByAdvancedSearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+	public ResponseEntity getByAdvancedSearch(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return ByAdvancedSearch(data, true, headToken);
 	}
 
 	@SuppressWarnings({ "rawtypes" })
 	@RequestMapping(value = "/advancedsearch/all", method = RequestMethod.POST)
-	public ResponseEntity getAllByAdvancedSearch(@RequestBody String data,@RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
+	public ResponseEntity getAllByAdvancedSearch(@RequestBody String data, @RequestHeader(value = "Authorization") String headToken) throws JsonProcessingException, JSONException, ParseException {
 		return ByAdvancedSearch(data, false, headToken);
 	}
 
@@ -361,21 +366,24 @@ public class lookupController{
 	
 	APIRequestDataLog getAPIResponse(List<Lookup> lookups, Lookup lookup, String message, APIRequestDataLog apiRequest, boolean isTableLog) throws JSONException, JsonProcessingException, ParseException {
 		ObjectMapper mapper = new ObjectMapper();
-
-		if (lookups == null && lookup == null) {
+		long lookupID = 0;
+		
+		if (message != null) {
 			apiRequest = tableDataLogs.errorDataLog(apiRequest, "Lookup", message);
 			apirequestdatalogRepository.saveAndFlush(apiRequest);
 		} else {
-			if (lookup != null)
+			if (lookup != null) {
 				apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookup));
-			else
+				lookupID = lookup.getID();
+			} else {
 				apiRequest.setREQUEST_OUTPUT(mapper.writeValueAsString(lookups));
+			}
 			apiRequest.setREQUEST_STATUS("Success");
 			apirequestdatalogRepository.saveAndFlush(apiRequest);
 		}
 		
 		if (isTableLog)
-			tbldatalogrepository.saveAndFlush(tableDataLogs.TableSaveDataLog(lookup.getID(), apiRequest.getDATABASETABLE_ID(), apiRequest.getREQUEST_ID(), apiRequest.getREQUEST_OUTPUT()));
+			tbldatalogrepository.saveAndFlush(tableDataLogs.TableSaveDataLog(lookupID, apiRequest.getDATABASETABLE_ID(), apiRequest.getREQUEST_ID(), apiRequest.getREQUEST_OUTPUT()));
 		
 		log.info("Output: " + apiRequest.getREQUEST_OUTPUT());
 		log.info("--------------------------------------------------------");
