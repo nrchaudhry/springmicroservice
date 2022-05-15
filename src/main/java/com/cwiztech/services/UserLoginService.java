@@ -20,58 +20,45 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 @Component
 public class UserLoginService {
 	private static final Logger log = LoggerFactory.getLogger(AccessToken.class);
+	private static String apigateway;
 	private static String userloginService;
 
 	public UserLoginService(Environment env) {
+		UserLoginService.apigateway = env.getRequiredProperty("file_path.apigatewayPath")+"service/apigateway";
 		UserLoginService.userloginService = env.getRequiredProperty("file_path.USERLOGINSERVICE");
 	}
 
-	private static HttpHeaders getHttpHeader(String accessToken) {
+	private static HttpHeaders getHttpHeader(String accessToken) throws JsonProcessingException, JSONException, ParseException {
 		log.info("----------------------------------------------------------------------------------");
-		log.info("USER LOGIN Service");
+		log.info("UserLogin Service");
 		log.info("----------------------------------------------------------------------------------");
+		JSONObject jsonObjtoken = null;
+		try {
+			jsonObjtoken = new JSONObject(AccessToken.findTokenAPIGateway());
+		} catch (Exception e) {
+		}
 		HttpHeaders headers = new HttpHeaders();
 		headers.add("Content-type", "application/json");
-		headers.add("Authorization", "bearer " + accessToken);
+		headers.add("Authorization", "bearer " + jsonObjtoken.getString("access_token"));
+//		headers.add("Authorization", accessToken);
 		headers.add("Grant_Type", "password");
 		return headers;
 	}
 
-	public static String GET(String URI, String UserName, String Password)
+	public static String GET(String URI, String accessToken)
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
 
-		JSONObject serviceToken = new JSONObject(AccessToken.findToken(userloginService, UserName, Password));
-		HttpHeaders headers = getHttpHeader(serviceToken.getString("access_token"));
-		String appPath = serviceToken.getString("applicationservice_PATH");
+		HttpHeaders headers = getHttpHeader(accessToken);
 
-		log.info("GET: " + appPath + URI);
+		log.info("GET: " + apigateway + ": " + URI);
 
-		HttpEntity<String> entity = new HttpEntity<String>(headers);
-		ResponseEntity<String> response = restTemplate.exchange(appPath + URI,
-				HttpMethod.GET, entity, String.class);
-		rtnAPIResponse=response.getBody().toString();
-
-		log.info("Response: " + rtnAPIResponse);
-		log.info("----------------------------------------------------------------------------------");
-		return rtnAPIResponse;
-	}
-
-	public static String POST(String URI, String body, String UserName, String Password)
-			throws JsonProcessingException, JSONException, ParseException {
-		String rtnAPIResponse="Invalid Resonse";
-		RestTemplate restTemplate = new RestTemplate();
-
-		JSONObject serviceToken = new JSONObject(AccessToken.findToken(userloginService, UserName, Password));
-		HttpHeaders headers = getHttpHeader(serviceToken.getString("access_token"));
-		String appPath = serviceToken.getString("applicationservice_PATH");
-
-		log.info("POST: " + appPath + URI);
-		log.info("Body: " + body);
-
-		HttpEntity<String> entity = new HttpEntity<String>(body.toString(), headers);
-		ResponseEntity<String> response = restTemplate.exchange(appPath + URI,
+		String body = "{'service_NAME': '" + userloginService + "', 'request_TYPE': 'GET', " +
+			  "'request_URI': '" + URI + "', 'request_BODY': ''}";
+		
+		HttpEntity<String> entity = new HttpEntity<String>(body, headers);
+		ResponseEntity<String> response = restTemplate.exchange(apigateway,
 				HttpMethod.POST, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
@@ -80,21 +67,22 @@ public class UserLoginService {
 		return rtnAPIResponse;
 	}
 
-	public static String PUT(String URI, String body, String UserName, String Password)
+	public static String POST(String URI, String body, String accessToken)
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
 
-		JSONObject serviceToken = new JSONObject(AccessToken.findToken(userloginService, UserName, Password));
-		HttpHeaders headers = getHttpHeader(serviceToken.getString("access_token"));
-		String appPath = serviceToken.getString("applicationservice_PATH");
+		HttpHeaders headers = getHttpHeader(accessToken);
 
-		log.info("PUT: " + appPath + URI);
+		log.info("POST: " + apigateway + ": " + URI);
 		log.info("Body: " + body);
 
-		HttpEntity<String> entity = new HttpEntity<String>(body.toString(), headers);
-		ResponseEntity<String> response = restTemplate.exchange(appPath + URI,
-				HttpMethod.PUT, entity, String.class);
+		body = "{\"service_NAME\": \"" + userloginService + "\", \"request_TYPE\": \"POST\", " +
+				  "\"request_URI\": \"" + URI + "\", \"request_BODY\": \"" + body + "\"}";
+			
+			HttpEntity<String> entity = new HttpEntity<String>(body, headers);
+			ResponseEntity<String> response = restTemplate.exchange(apigateway,
+					HttpMethod.POST, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
 		log.info("Response: " + rtnAPIResponse);
@@ -102,24 +90,49 @@ public class UserLoginService {
 		return rtnAPIResponse;
 	}
 
-	public static String DELETE(String URI, String UserName, String Password)
+	public static String PUT(String URI, String body, String accessToken)
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
 
-		JSONObject serviceToken = new JSONObject(AccessToken.findToken(userloginService, UserName, Password));
-		HttpHeaders headers = getHttpHeader(serviceToken.getString("access_token"));
-		String appPath = serviceToken.getString("applicationservice_PATH");
+		HttpHeaders headers = getHttpHeader(accessToken);
 
-		log.info("DELETE: " + appPath + URI);
+		log.info("PUT: " + apigateway + ": " + URI);
+		log.info("Body: " + body);
 
-		HttpEntity<String> entity = new HttpEntity<String>(headers);
-		ResponseEntity<String> response = restTemplate.exchange(appPath + URI,
-				HttpMethod.DELETE, entity, String.class);
+		body = "{\"service_NAME\": \"" + userloginService + "\", \"request_TYPE\": \"PUT\", " +
+				  "\"request_URI\": \"" + URI + "\", \"request_BODY\": \"" + body + "\"}";
+			
+			HttpEntity<String> entity = new HttpEntity<String>(body, headers);
+			ResponseEntity<String> response = restTemplate.exchange(apigateway,
+					HttpMethod.POST, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
 		log.info("Response: " + rtnAPIResponse);
 		log.info("----------------------------------------------------------------------------------");
 		return rtnAPIResponse;
 	}
+
+	public static String DELETE(String URI, String accessToken)
+			throws JsonProcessingException, JSONException, ParseException {
+		String rtnAPIResponse="Invalid Resonse";
+		RestTemplate restTemplate = new RestTemplate();
+
+		HttpHeaders headers = getHttpHeader(accessToken);
+
+		log.info("GET: " + apigateway + ": " + URI);
+
+		String body = "{'service_NAME': '" + userloginService + "', 'request_TYPE': 'DELETE', " +
+			  "'request_URI': '" + URI + "', 'request_BODY': ''}";
+		
+		HttpEntity<String> entity = new HttpEntity<String>(body, headers);
+		ResponseEntity<String> response = restTemplate.exchange(apigateway,
+				HttpMethod.POST, entity, String.class);
+		rtnAPIResponse=response.getBody().toString();
+
+		log.info("Response: " + rtnAPIResponse);
+		log.info("----------------------------------------------------------------------------------");
+		return rtnAPIResponse;
+	}
+
 }
