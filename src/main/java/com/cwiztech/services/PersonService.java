@@ -1,7 +1,10 @@
 package com.cwiztech.services;
 
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -20,45 +23,23 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 @Component
 public class PersonService {
 	private static final Logger log = LoggerFactory.getLogger(AccessToken.class);
-	private static String apigateway;
 	private static String personService;
 
 	public PersonService(Environment env) {
-		PersonService.apigateway = env.getRequiredProperty("file_path.apigatewayPath")+"service/apigateway";
 		PersonService.personService = env.getRequiredProperty("file_path.PERSONSERVICE");
-	}
-
-	private static HttpHeaders getHttpHeader(String accessToken) throws JsonProcessingException, JSONException, ParseException {
-		log.info("----------------------------------------------------------------------------------");
-		log.info("PERSON Service");
-		log.info("----------------------------------------------------------------------------------");
-		JSONObject jsonObjtoken = null;
-		try {
-			jsonObjtoken = new JSONObject(AccessToken.findTokenAPIGateway());
-		} catch (Exception e) {
-		}
-		HttpHeaders headers = new HttpHeaders();
-		headers.add("Content-type", "application/json");
-		headers.add("Authorization", "bearer " + jsonObjtoken.getString("access_token"));
-		headers.add("Grant_Type", "password");
-		return headers;
 	}
 
 	public static String GET(String URI, String accessToken)
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
+		HttpHeaders headers = AccessToken.getHttpHeader(accessToken);
+		String appPath = AccessToken.findApplicationDetail(personService, headers);
 
-		HttpHeaders headers = getHttpHeader(accessToken);
+		log.info("GET: " + appPath + URI);
 
-		log.info("GET: " + apigateway + ": " + URI);
-
-		String body = "{'service_NAME': '" + personService + "', 'request_TYPE': 'GET', " +
-			  "'request_URI': '" + URI + "', 'request_BODY': ''}";
-		
-		HttpEntity<String> entity = new HttpEntity<String>(body, headers);
-		ResponseEntity<String> response = restTemplate.exchange(apigateway,
-				HttpMethod.POST, entity, String.class);
+		HttpEntity<String> entity = new HttpEntity<String>(headers);
+		ResponseEntity<String> response = restTemplate.exchange(appPath + URI, HttpMethod.GET, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
 		log.info("Response: " + rtnAPIResponse);
@@ -70,18 +51,14 @@ public class PersonService {
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
+		HttpHeaders headers = AccessToken.getHttpHeader(accessToken);
+		String appPath = AccessToken.findApplicationDetail(personService, headers);
 
-		HttpHeaders headers = getHttpHeader(accessToken);
-
-		log.info("POST: " + apigateway + ": " + URI);
+		log.info("POST: " + appPath + URI);
 		log.info("Body: " + body);
 
-		body = "{\"service_NAME\": \"" + personService + "\", \"request_TYPE\": \"POST\", " +
-				  "\"request_URI\": \"" + URI + "\", \"request_BODY\": \"" + body + "\"}";
-			
-			HttpEntity<String> entity = new HttpEntity<String>(body, headers);
-			ResponseEntity<String> response = restTemplate.exchange(apigateway,
-					HttpMethod.POST, entity, String.class);
+		HttpEntity<String> entity = new HttpEntity<String>(body.toString(), headers);
+		ResponseEntity<String> response = restTemplate.exchange(appPath + URI, HttpMethod.POST, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
 		log.info("Response: " + rtnAPIResponse);
@@ -93,18 +70,14 @@ public class PersonService {
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
+		HttpHeaders headers = AccessToken.getHttpHeader(accessToken);
+		String appPath = AccessToken.findApplicationDetail(personService, headers);
 
-		HttpHeaders headers = getHttpHeader(accessToken);
-
-		log.info("PUT: " + apigateway + ": " + URI);
+		log.info("PUT: " + appPath + URI);
 		log.info("Body: " + body);
 
-		body = "{\"service_NAME\": \"" + personService + "\", \"request_TYPE\": \"PUT\", " +
-				  "\"request_URI\": \"" + URI + "\", \"request_BODY\": \"" + body + "\"}";
-			
-			HttpEntity<String> entity = new HttpEntity<String>(body, headers);
-			ResponseEntity<String> response = restTemplate.exchange(apigateway,
-					HttpMethod.POST, entity, String.class);
+		HttpEntity<String> entity = new HttpEntity<String>(body.toString(), headers);
+		ResponseEntity<String> response = restTemplate.exchange(appPath + URI, HttpMethod.PUT, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
 		log.info("Response: " + rtnAPIResponse);
@@ -116,22 +89,45 @@ public class PersonService {
 			throws JsonProcessingException, JSONException, ParseException {
 		String rtnAPIResponse="Invalid Resonse";
 		RestTemplate restTemplate = new RestTemplate();
+		HttpHeaders headers = AccessToken.getHttpHeader(accessToken);
+		String appPath = AccessToken.findApplicationDetail(personService, headers);
 
-		HttpHeaders headers = getHttpHeader(accessToken);
+		log.info("DELETE: " + appPath + URI);
 
-		log.info("GET: " + apigateway + ": " + URI);
-
-		String body = "{'service_NAME': '" + personService + "', 'request_TYPE': 'DELETE', " +
-			  "'request_URI': '" + URI + "', 'request_BODY': ''}";
-		
-		HttpEntity<String> entity = new HttpEntity<String>(body, headers);
-		ResponseEntity<String> response = restTemplate.exchange(apigateway,
-				HttpMethod.POST, entity, String.class);
+		HttpEntity<String> entity = new HttpEntity<String>(headers);
+		ResponseEntity<String> response = restTemplate.exchange(appPath + URI, HttpMethod.DELETE, entity, String.class);
 		rtnAPIResponse=response.getBody().toString();
 
 		log.info("Response: " + rtnAPIResponse);
 		log.info("----------------------------------------------------------------------------------");
 		return rtnAPIResponse;
 	}
-
 }
+
+//if(calling.getPERSON_ID() != null) {
+	//JSONObject person = new JSONObject(PersonService.GET("person/"+calling.getPERSON_ID(), apiRequest.getREQUEST_OUTPUT()));
+	//calling.setPERSON_DETAIL(person.toString());
+//}
+
+
+
+
+
+//if (callings.size()>0) {
+//	List<Integer> personList = new ArrayList<Integer>();
+//	for (int i=0; i<callings.size(); i++) {
+//		personList.add(Integer.parseInt(callings.get(i).getPERSON_ID().toString()));
+//	}
+//	JSONArray personObject = new JSONArray(PersonService.POST("person/ids", "{persons: "+personList+"}", apiRequest.getREQUEST_OUTPUT()));
+	
+//	for (int i=0; i<callings.size(); i++) {
+//		for (int j=0; j<personObject.length(); j++) {
+//			JSONObject person = personObject.getJSONObject(j);
+//			if(callings.get(i).getPERSON_ID() == person.getLong("person_ID") ) {
+//				callings.get(i).setPERSON_DETAIL(person.toString());
+//			}
+//		}
+//	}
+//}
+
+
