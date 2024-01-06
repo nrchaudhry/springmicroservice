@@ -7,10 +7,7 @@ git push
 mkdir ../springmicroservice-deploys
 cd ../springmicroservice-deploys
 
-git clone git@github.com:nrchaudhry/kitaasspringmicroserviceapi.git
-git clone git@github.com:nrchaudhry/jcaspringmicroserviceapi.git
 git clone git@github.com:nrchaudhry/cwiztechspringmicroserviceapi.git
-git clone git@github.com:nrchaudhry/kbfsspringmicroserviceapi.git
 
 dirlist=$(find $1 -mindepth 1 -maxdepth 1 -type d)
 
