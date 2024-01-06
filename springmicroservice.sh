@@ -17,28 +17,9 @@ do
     cd $dir
     git pull
 
-    cd src/main/java/com/cwiztech
-    dirlist1=$(find $1 -mindepth 1 -maxdepth 1 -type d)
-    for dir1 in $dirlist1
-    do
-      (
-        rm -r $dir1
-      )
-    done
+    rm src/main/java
     
-    cd ../../../../../../../springmicroservice/src/main/java/com/cwiztech
-    dirlist1=$(find $1 -mindepth 1 -maxdepth 1 -type d)
-    for dir1 in $dirlist1
-    do
-      (
-        echo $dir1
-	cd ../../../../../../springmicroservice-deploys
-	cd $dir/src/main/java/com/cwiztech/
-        cp -r ../../../../../../../springmicroservice/src/main/java/com/cwiztech/$dir1 .
-      )
-    done
-
-    cd ../../../../../../springmicroservice-deploys
+    cp -r ../../springmicroservice/src/main/java src/main/
 
     cd $dir
     git add .
