@@ -44,12 +44,15 @@ public class tableDataLogs {
 
 	public static APIRequestDataLog errorDataLog(APIRequestDataLog apiRequest, String error, String message)
 			throws JsonProcessingException {
+		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date date = new Date();
 		JSONObject obj = new JSONObject();
 		obj.put("status", 401);
 		obj.put("error", error);
 		obj.put("message", message);
 		obj.put("path", apiRequest.getREQUEST_PATH());
 
+		apiRequest.setRESPONSE_DATETIME(dateFormat1.format(date));
 		apiRequest.setREQUEST_OUTPUT(obj.toString());
 		apiRequest.setREQUEST_STATUS("Error");
 		log.info("Output: " + apiRequest.getREQUEST_OUTPUT());
@@ -64,6 +67,7 @@ public class tableDataLogs {
 		Date date = new Date();
 
 		apiRequest.setLOG_DATE(dateFormat1.format(date));
+		apiRequest.setREQUEST_DATETIME(dateFormat1.format(date));
 		apiRequest.setDATABASETABLE_ID(databaseTableID);
 		apiRequest.setREQUEST_ID(requestID);
 		apiRequest.setREQUEST_TYPE(requestType);

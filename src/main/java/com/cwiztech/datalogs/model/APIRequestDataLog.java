@@ -39,6 +39,12 @@ public class APIRequestDataLog {
 	@Column(name = "REQUEST_OUTPUT")
 	private String REQUEST_OUTPUT;
 
+	@Column(name = "REQUEST_DATETIME")
+	private String REQUEST_DATETIME;
+
+	@Column(name = "RESPONSE_DATETIME")
+	private String RESPONSE_DATETIME;
+
 	@Column(name = "REQUEST_STATUS")
 	private String REQUEST_STATUS;
 
@@ -106,6 +112,22 @@ public class APIRequestDataLog {
 
 	public void setREQUEST_OUTPUT(String rEQUEST_OUTPUT) {
 		REQUEST_OUTPUT = rEQUEST_OUTPUT;
+	}
+
+	public String getREQUEST_DATETIME() {
+		return REQUEST_DATETIME;
+	}
+
+	public void setREQUEST_DATETIME(String rEQUEST_DATETIME) {
+		REQUEST_DATETIME = rEQUEST_DATETIME;
+	}
+
+	public String getRESPONSE_DATETIME() {
+		return RESPONSE_DATETIME;
+	}
+
+	public void setRESPONSE_DATETIME(String rESPONSE_DATETIME) {
+		RESPONSE_DATETIME = rESPONSE_DATETIME;
 	}
 
 	public String getREQUEST_STATUS() {
