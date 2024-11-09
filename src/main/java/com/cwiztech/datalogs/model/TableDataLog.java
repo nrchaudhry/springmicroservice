@@ -1,6 +1,5 @@
 package com.cwiztech.datalogs.model;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -24,7 +23,7 @@ public class TableDataLog {
 	@Column(name = "TABLE_ID")
 	private long TABLE_ID;
 
-	@OneToOne(cascade = { CascadeType.ALL })
+	@OneToOne	
 	@JoinColumn(name = "DATABASETABLE_ID")
 	private DatabaseTables DATABASETABLE_ID;
 

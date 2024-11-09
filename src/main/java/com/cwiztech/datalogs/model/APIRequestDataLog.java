@@ -38,7 +38,7 @@ public class APIRequestDataLog {
 
 	@Column(name = "REQUEST_OUTPUT")
 	private String REQUEST_OUTPUT;
-
+	
 	@Column(name = "REQUEST_DATETIME")
 	private String REQUEST_DATETIME;
 
@@ -47,6 +47,9 @@ public class APIRequestDataLog {
 
 	@Column(name = "REQUEST_STATUS")
 	private String REQUEST_STATUS;
+
+	@Column(name = "LOG_BY")
+	private Long LOG_BY;
 
 	@Column(name = "LOG_WORKSTATION")
 	private String LOG_WORKSTATION;
@@ -91,6 +94,22 @@ public class APIRequestDataLog {
 		REQUEST_TYPE = rEQUEST_TYPE;
 	}
 
+	public String getREQUEST_DATETIME() {
+		return REQUEST_DATETIME;
+	}
+
+	public void setREQUEST_DATETIME(String rEQUEST_DATETIME) {
+		REQUEST_DATETIME = rEQUEST_DATETIME;
+	}
+
+	public String getRESPONSE_DATETIME() {
+		return RESPONSE_DATETIME;
+	}
+
+	public void setRESPONSE_DATETIME(String rESPONSE_DATETIME) {
+		RESPONSE_DATETIME = rESPONSE_DATETIME;
+	}
+
 	public String getREQUEST_PATH() {
 		return REQUEST_PATH;
 	}
@@ -114,28 +133,20 @@ public class APIRequestDataLog {
 		REQUEST_OUTPUT = rEQUEST_OUTPUT;
 	}
 
-	public String getREQUEST_DATETIME() {
-		return REQUEST_DATETIME;
-	}
-
-	public void setREQUEST_DATETIME(String rEQUEST_DATETIME) {
-		REQUEST_DATETIME = rEQUEST_DATETIME;
-	}
-
-	public String getRESPONSE_DATETIME() {
-		return RESPONSE_DATETIME;
-	}
-
-	public void setRESPONSE_DATETIME(String rESPONSE_DATETIME) {
-		RESPONSE_DATETIME = rESPONSE_DATETIME;
-	}
-
 	public String getREQUEST_STATUS() {
 		return REQUEST_STATUS;
 	}
 
 	public void setREQUEST_STATUS(String rEQUEST_STATUS) {
 		REQUEST_STATUS = rEQUEST_STATUS;
+	}
+
+	public Long getLOG_BY() {
+		return LOG_BY;
+	}
+
+	public void setLOG_BY(Long lOG_BY) {
+		LOG_BY = lOG_BY;
 	}
 
 	public String getLOG_WORKSTATION() {

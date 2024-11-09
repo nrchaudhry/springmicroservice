@@ -29,7 +29,7 @@ public class tableDataLogs {
 	}
 
 	public static TableDataLog TableDeleteDataLog(long tableID, DatabaseTables databaseTableID, String tableData) {
-		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date date = new Date();
 
 		TableDataLog tableDataLog = new TableDataLog();
@@ -44,9 +44,9 @@ public class tableDataLogs {
 
 	public static APIRequestDataLog errorDataLog(APIRequestDataLog apiRequest, String error, String message)
 			throws JsonProcessingException {
+		JSONObject obj = new JSONObject();
 		SimpleDateFormat dateFormat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date date = new Date();
-		JSONObject obj = new JSONObject();
 		obj.put("status", 401);
 		obj.put("error", error);
 		obj.put("message", message);
@@ -73,6 +73,7 @@ public class tableDataLogs {
 		apiRequest.setREQUEST_TYPE(requestType);
 		apiRequest.setREQUEST_PATH(path);
 		apiRequest.setREQUEST_INPUT(input);
+		apiRequest.setLOG_BY(requestID);
 		apiRequest.setLOG_WORKSTATION(workstation);
 
 		return apiRequest;
