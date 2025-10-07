@@ -17,11 +17,10 @@ do
     cd $dir
     git pull
 
-    rm src/main/java
+    rm -r src/main/java
     
     cp -r ../../springmicroservice/src/main/java src/main/
 
-    cd $dir
     git add .
     git commit -m "New Changes"
     git push
