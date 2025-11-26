@@ -126,8 +126,8 @@ public class ServiceCall {
 	}
 }
 
-//if(calling.getCUSTOMER_ID() != null) {
-	//JSONObject customer = new JSONObject(ServiceCall.GET("customer/"+calling.getCUSTOMER_ID(), apiRequest.getREQUEST_OUTPUT()));
+//if (calling.getCUSTOMER_ID() != null) {
+	//JSONObject customer = new JSONObject(ServiceCall.GET("customer/"+calling.getCUSTOMER_ID(), apiRequest.getString("access_TOKEN")));
 	//calling.setCUSTOMER_DETAIL(customer.toString());
 //}
 
@@ -145,7 +145,7 @@ public class ServiceCall {
 //	for (int i=0; i<callings.size(); i++) {
 //		for (int j=0; j<customerObject.length(); j++) {
 //			JSONObject customer = customerObject.getJSONObject(j);
-//			if(callings.get(i).getCUSTOMER_ID() == customer.getLong("customer_ID") ) {
+//			if (callings.get(i).getCUSTOMER_ID() == customer.getLong("customer_ID") ) {
 //				callings.get(i).setCUSTOMER_DETAIL(customer.toString());
 //			}
 //		}

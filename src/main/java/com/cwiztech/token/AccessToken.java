@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import com.cwiztech.log.apiRequestLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Component
@@ -40,14 +41,14 @@ public class AccessToken {
 		return headers;
 	}
 
-	public static JSONObject checkToken(String accessToken) {
+	public static JSONObject checkToken(String requestType, String requestURI, String requestBody, String workstation, String accessToken) throws JsonProcessingException {
 		log.info("----------------------------------------------------------------------------------");
 		log.info("Check Toeken Detail By Token Service");
 		log.info("Application Path: " + oauthapplicationPath);
 		log.info("accessToken: " + accessToken);
 		log.info("----------------------------------------------------------------------------------");
 		RestTemplate restTemplate = new RestTemplate();
-		JSONObject myobj = new JSONObject();
+		JSONObject checkTokenResponse = new JSONObject();
 		
 		String token = accessToken;
 		String[] parts = token.split(" ");
@@ -56,15 +57,43 @@ public class AccessToken {
 		
 		try {
 			ResponseEntity<String> getToken = restTemplate.exchange(oauthapplicationPath + "oauth/check_token?token=" + OauthToken, HttpMethod.GET, null, String.class);
-			myobj = new JSONObject(getToken.getBody().toString());
+			checkTokenResponse = new JSONObject(getToken.getBody().toString());
 		} catch (Exception e) {
-			myobj.put("error", "invalid_token");
-			myobj.put("error_description", "Token was not recognised");
+			checkTokenResponse.put("error", "invalid_token");
+			checkTokenResponse.put("error_description", "Token was not recognised");
 		}
 		log.info("----------------------------------------------------------------------------------");
 		
-		return myobj;
+		JSONObject apiRequest = new JSONObject();
+		
+		log.info(requestType + ": " + requestURI);
+		if (requestBody != null)
+			log.info("Input: " + requestBody);
+
+		if (checkTokenResponse.has("error")) {
+			apiRequest = apiRequestLog.apiRequestCreateLog(requestType, (long) 0, requestURI, requestBody, workstation);
+			apiRequest = apiRequestLog.apiRequestErrorLog(apiRequest, "invalid_token", "Token was not recognised");
+			return apiRequest ;
+		}
+
+		Long requestUser = (long) 0;
+		if (accessToken != null && accessToken != "")
+			requestUser = checkTokenResponse.getLong("user_ID");
+		apiRequest = apiRequestLog.apiRequestCreateLog(requestType, requestUser, requestURI, requestBody, workstation);
+		apiRequest.put("access_TOKEN", accessToken);
+		if (workstation == null) {
+			apiRequest.put("log_WORKSTATION", "Unknown");
+			
+		} else {
+			apiRequest.put("log_WORKSTATION", workstation);
+		}
+
+		if (checkTokenResponse.has("employee_ID") && !checkTokenResponse.isNull("employee_ID"))
+			apiRequest.put("employee_ID", checkTokenResponse.getLong("employee_ID"));
+
+		return apiRequest;
 	}
+
 
 	public static String findServiceDetail(String serviceURI, String serviceMethod, HttpHeaders headers)
 			throws JsonProcessingException, JSONException, ParseException {
